@@ -1,5 +1,4 @@
 # LeNet1-on-Matlab-from-scratch
-This is an implementation of the method described in LeCun's 1989 "Handwritten Digit Recognition with a Back-Propagation Network" paper.
 
 This is an implementation of the method described in LeCun's 1989 classic "Handwritten Digit Recognition with a Back-Propagation Network". 
 It doesn't use any toolbox or library. 
