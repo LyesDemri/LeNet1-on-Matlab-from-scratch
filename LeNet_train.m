@@ -1,7 +1,13 @@
 clear;clc;close all;
 tic
-%This program reproduces the network described in LeCun 1989 (Handwritten 
+%This program reproduces the network described in LeCun 1989 (Handwritten
 %Digit Recognition with a Back-Propagation Network)
+
+%some variable for plot initialization
+Iter_plot=[];
+MSE_plot=[];
+Iter_plot_average=[];
+MSE_plot_average=[];
 
 %Open image:
 load('train-images.idx3-ubyte.mat');
@@ -22,7 +28,7 @@ new_network = true;
 if new_network
     %initialize network:
     for l=1:L
-    	%for convolutional layers, generate random values
+        %for convolutional layers, generate random values
         %for subsampling layers, generate values that will average
         %the 4 input pixels.
         if strcmp(layerTypes{l},'conv')
@@ -55,7 +61,7 @@ if new_network
     bfc = rand(10,1)*2-1;
 else
     %change this to whatever you named your network of course
-    load('LeNet3.mat');
+    load('LeNet.mat');
 end
 
 seq = randperm(60000);  %generate random permutation of examples
@@ -67,7 +73,7 @@ errors = 0;
 for iter = 1:length(seq)
     I = pixel(:,:,seq(iter));
     correct_output = zeros(10,1); correct_output(label(seq(iter))+1) = 1;
-    
+
     %first convolutional layer:
     for f = 1:numFilters(1)
         H{1}{f} = conv_filter(I,Ws{1}{f},bs{1}{f});
@@ -103,7 +109,7 @@ for iter = 1:length(seq)
     for f = 1:numFilters(4)
         H{5}{f} = subsampling_filter(H{4}{f},Ws{4}{f});
     end
-    
+
     %Now we must prepare the input for the fully connected layer. This
     %basically takes each 4x4 subsampled image, transformes it into a 16x1
     %vector, and concatenates all of the 16x1 vectors to constitute one
@@ -114,7 +120,7 @@ for iter = 1:length(seq)
         n=n+numel(H{5}{f});
     end
     %We'll have to do the opposite during back-propagation of course
-    
+
     %Finally, here's the output to the network:
     final_output = logsig(Wfc*X+bfc);
     [whatever,given_answer] = max(final_output);
@@ -130,9 +136,22 @@ for iter = 1:length(seq)
 
     O = final_output;
     T = correct_output;
-    
+
+    Iter_plot=[Iter_plot,iter];
+    MSE_plot=[MSE_plot,MSE];
     %comment this for faster performance (not by much but still)
-    disp(['iter: ' num2str(iter) ' MSE = ' num2str(MSE)])
+    if (rem(iter,200)==0)
+        Iter_plot_average=[Iter_plot_average,mean(Iter_plot)];
+        MSE_plot_average=[MSE_plot_average,mean(MSE_plot)];
+        Iter_plot=[];
+        MSE_plot=[];
+        loglog(Iter_plot_average,MSE_plot_average,'b.')
+        disp(['iter: ' num2str(iter) ' MSE = ' num2str(MSE)])
+        xlabel('Iteration')
+        ylabel('MSE')
+        set(gca,'fontsize',16)
+        drawnow
+    end
 
     %--------------------------------------------------------
     %Backpropagation time:
@@ -143,16 +162,16 @@ for iter = 1:length(seq)
     %we need dE/dX to backpropagate further:
     dE_dX = Wfc'*dE_dbfc;
 
-    %remember X is a giant 192x1 vector containing all concatenated 16x1 
+    %remember X is a giant 192x1 vector containing all concatenated 16x1
     %images, and so is dE/dX. We need to do some cleaning before we can
-    %move on. The cleaning consists of separating the 12 16x1 subvectors in 
+    %move on. The cleaning consists of separating the 12 16x1 subvectors in
     %dE/dX. We'll use a temporary variable named dE/dX2
     dE_dX2 = cell(1,12);
     for i=1:12
         dE_dX2{i} = dE_dX((i-1)*16+1:i*16);
     end
     dE_dX = dE_dX2;clear dE_dX2;
-    
+
     %Backpropagate through the second subsampling layer:
     %dE/dH5 is just dE/dX but with the values rearranged into matrices
 
@@ -204,14 +223,14 @@ for iter = 1:length(seq)
             end
         end
     end
-    
+
     %We assumed that H3 was the result of the summations of pairs of the
     %images in H2. A little calculus should help you see that dH3/dH2 is
     %nothing but table 1 all over again.
     dH3_dH2 = [1,0,1,1,1,1,0,0,0,0,0,0;
-               0,1,1,1,1,1,0,0,0,0,0,0;
-               0,0,0,0,0,0,1,0,1,1,1,1;
-               0,0,0,0,0,0,0,1,1,1,1,1];
+        0,1,1,1,1,1,0,0,0,0,0,0;
+        0,0,0,0,0,0,1,0,1,1,1,1;
+        0,0,0,0,0,0,0,1,1,1,1,1];
     dE_dH2 = cell(1,4);
     %again, dE/dH2 = dE/dH3 * dH3/dH2.
     for f1=1:4
@@ -220,7 +239,7 @@ for iter = 1:length(seq)
             dE_dH2{f1} = dE_dH2{f1} + dE_dH3{f2}*dH3_dH2(f1,f2);
         end
     end
-    
+
     %Again, backpropagate through a subsampling layer, this was already
     %done once
     dE_dH1 = cell(1,4);
@@ -232,8 +251,8 @@ for iter = 1:length(seq)
             end
         end
     end
-    
-    %Finally, finde dH1/dW1 and dH1/dB1 in order to compute dE/dW1 and
+
+    %Finally, find dH1/dW1 and dH1/dB1 in order to compute dE/dW1 and
     %dE/dB1, and we're done.
     dH1_dW1 = cell(1,4);
     dH1_dB1 = cell(1,4);
@@ -252,7 +271,7 @@ for iter = 1:length(seq)
         end
         dE_dB1{f} = dE_dH1{f}.*dH1_dB1{f};
     end
-    
+
     %We're done computing the necessary gradients. Weights update time:
     for f=1:4
         Ws{1}{f} = Ws{1}{f} - 0.1*dE_dW1{f};
@@ -267,7 +286,7 @@ for iter = 1:length(seq)
     Wfc = Wfc - 0.1*dE_dWfc;
     bfc = bfc - 0.1*dE_dbfc;
 end
-
+saveas(gcf,'MSE_vs_Iteration.png');
 disp('Done.')
 disp(['Number of errors: ' num2str(errors)]);
 %save the network

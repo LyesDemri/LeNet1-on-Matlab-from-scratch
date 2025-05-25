@@ -13,7 +13,7 @@ for image = 1:10000
     I = pixel(:,:,image);
     correct_answer = label(image);
 
-	for f = 1:4
+    for f = 1:4
         H{1}{f} = conv_filter(I,Ws{1}{f},bs{1}{f});
     end
 
@@ -54,11 +54,13 @@ for image = 1:10000
     if (given_answer-1 ~= label(image))
         errors = errors+1;
     end
-    disp(['Image ' num2str(image) ', errors: ' num2str(errors) ', error rate: ' num2str(errors*100/image)]);
+    if rem(image,100)==0
+        disp(['Image ' num2str(image) ', cumulative errors: ' num2str(errors) ', error rate: ' num2str(errors*100/image,3),'%']);
+    end
 end
-disp(['Number of errors: ' num2str(errors)])
-disp(['Error rate: ' num2str(errors*100/10000)])
-disp(['Correct recognition rate: ' num2str(100 - errors*100/10000)])
+disp(['Number of cumulative errors: ' num2str(errors)])
+disp(['Error rate: ' num2str(errors*100/10000,3),'%'])
+disp(['Correct recognition rate: ' num2str(100 - errors*100/10000,3),'%'])
 %this next line is a very lazy way of keeping track of the correct
 %recognition rates for each epoch. You can do much much better. It basically
 %writes the correct recognition rate as the name of a .mat file. Terrible.
